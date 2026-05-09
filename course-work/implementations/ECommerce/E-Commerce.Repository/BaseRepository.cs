@@ -10,15 +10,15 @@ using System.Threading.Tasks;
 
 namespace E_Commerce.Repository
 {
-    internal class BaseRepository<T> : IBaseRepository<T> where T : class
+    public class BaseRepository<T> : IBaseRepository<T> where T : class
     {
         private readonly ECommerceDbContext _context;
         private readonly DbSet<T> _dbSet;
 
-        public BaseRepository(ECommerceDbContext context, DbSet<T> dbSet)
+        public BaseRepository(ECommerceDbContext context)
         {
             _context = context;
-            _dbSet = dbSet;
+            _dbSet = context.Set<T>();
         }
         public async Task Create(T entity)
         {
@@ -28,6 +28,7 @@ namespace E_Commerce.Repository
 
         public async Task Delete(T entity)
         {
+
             await Task.FromResult(_dbSet.Remove(entity));
             await _context.SaveChangesAsync();
         }
