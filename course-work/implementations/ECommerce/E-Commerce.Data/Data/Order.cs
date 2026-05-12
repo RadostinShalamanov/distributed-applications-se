@@ -1,4 +1,5 @@
-﻿using System;
+﻿using E_Commerce.Data.Data.Enums;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -19,18 +20,18 @@ namespace E_Commerce.Data.Data
         public DateTime OrderDate { get; set; } = DateTime.UtcNow;
         public decimal TotalPrice { get; set; }
 
-        [Required]
+
         [MaxLength(20)]
-        public string Status { get; set; }
+        public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
         [Required]
         [MaxLength(80)]
         public string Address { get; set; }
 
-        public bool IsPaid { get; set; }
+        public bool IsPaid { get; set; } = false;
 
 
-        public ICollection<OrderItem> OrderItems { get; set; }
+        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
 
     }

@@ -26,7 +26,17 @@ namespace E_Commerce.API.Controllers
 
         public async Task<ActionResult<IEnumerable<CategoryResponseDto>>> GetCategories()
         {
-            return Ok(await _service.GetAll());
+            var categories = await _service.GetAll(x => x.Products);
+            return Ok(categories.Select(x => new CategoryResponseDto
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Products = x.Products.Select(s => new ProductCategoryResponseDto
+                {
+                    Name = s.Name,
+                    Description = s.Description
+                }).ToList()
+            }));
         }
 
         [HttpPost]
@@ -44,6 +54,32 @@ namespace E_Commerce.API.Controllers
             return Ok();
         }
 
+        [HttpPut("{id}")]
+
+        public async Task<IActionResult> Update(int id, CategoryRequestDto dto)
+        {
+            var toUpdate = await _service.GetById(id);
+            if (toUpdate == null)
+            {
+                return NotFound();
+            }
+
+            toUpdate.Name = dto.Name;
+            toUpdate.Description = dto.Description;
+
+            await _service.Update(toUpdate);
+            return Ok();
+        }
+
+        [HttpDelete]
+
+        [HttpDelete("{id}")]
+
+        public async Task<IActionResult> Delete(int id)
+        {
+            await _service.Delete(id);
+            return Ok();
+        }
 
     }
 }

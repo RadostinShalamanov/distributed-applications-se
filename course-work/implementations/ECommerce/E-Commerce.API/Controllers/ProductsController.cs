@@ -25,7 +25,15 @@ namespace E_Commerce.API.Controllers
 
         public async Task<ActionResult<IEnumerable<ProductResponseDto>>> GetProducts()
         {
-            return Ok(await _service.GetAll());
+            var products = await _service.GetAll(x => x.Category);
+            return Ok(products.Select(x => new ProductResponseDto
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Price = x.Price,
+                Description = x.Description,
+                Category = x.Category.Name
+            }));
         }
 
         [HttpGet("{id}")]

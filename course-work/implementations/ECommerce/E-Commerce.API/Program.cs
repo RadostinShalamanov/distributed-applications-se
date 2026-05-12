@@ -1,5 +1,6 @@
 
 using E_Commerce.Data;
+using E_Commerce.Data.Data;
 using E_Commerce.Repository;
 using E_Commerce.Repository.Interfaces;
 using E_Commerce.Services;
@@ -24,8 +25,13 @@ namespace E_Commerce.API
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            //services
             builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
             builder.Services.AddScoped(typeof(IBaseService<>), typeof(BaseService<>));
+            builder.Services.AddScoped<IOrderService, OrderService>();
+            builder.Services.AddScoped<IBaseRepository<Order>, BaseRepository<Order>>();
+            builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IBaseRepository<User>, BaseRepository<User>>();
 
             var app = builder.Build();
 

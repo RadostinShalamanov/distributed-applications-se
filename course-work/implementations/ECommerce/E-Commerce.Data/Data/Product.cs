@@ -26,6 +26,6 @@ namespace E_Commerce.Data.Data
 
         public double Rating { get; set; }
 
-        public ICollection<OrderItem> OrderItems { get; set; }
+        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }
 }

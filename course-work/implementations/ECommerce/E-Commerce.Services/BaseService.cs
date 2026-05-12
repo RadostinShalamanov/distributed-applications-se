@@ -3,6 +3,7 @@ using E_Commerce.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -32,6 +33,11 @@ namespace E_Commerce.Services
         public async Task<IEnumerable<T>> GetAll()
         {
             return await _repo.GetAll();
+        }
+
+        public async Task<IEnumerable<T>> GetAll(params Expression<Func<T, object>>[] includes)
+        {
+            return await _repo.GetAll(includes);
         }
 
         public async Task<T> GetById(int id)

@@ -1,4 +1,5 @@
-﻿using E_Commerce.Data.Data;
+﻿using E_Commerce.API.DTOs.Category;
+using E_Commerce.Data.Data;
 using System.ComponentModel.DataAnnotations;
 
 namespace E_Commerce.API.DTOs.Product
@@ -12,6 +13,8 @@ namespace E_Commerce.API.DTOs.Product
         public decimal Price { get; set; }
 
         public string Description { get; set; }
+
+        public string Category { get; set; }
     }
 }
 //public int Id { get; set; }
