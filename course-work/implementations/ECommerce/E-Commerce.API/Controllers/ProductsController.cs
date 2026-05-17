@@ -5,6 +5,7 @@ using E_Commerce.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 
 namespace E_Commerce.API.Controllers
@@ -25,17 +26,70 @@ namespace E_Commerce.API.Controllers
 
         [HttpGet]
 
-        public async Task<ActionResult<IEnumerable<ProductResponseDto>>> GetProducts()
+        public async Task<ActionResult<IEnumerable<ProductResponseDto>>> GetProducts([FromQuery] ProductQueryParameters query)
         {
-            var products = await _service.GetAll(x => x.Category);
-            return Ok(products.Select(x => new ProductResponseDto
+            //var products = await _service.GetAll(x => x.Category);
+            //return Ok(products.Select(x => new ProductResponseDto
+            //{
+            //    Id = x.Id,
+            //    Name = x.Name,
+            //    Price = x.Price,
+            //    Description = x.Description,
+            //    Category = x.Category.Name
+            //}));
+            var products = await _dbContext.Products
+            .Include(p => p.Category)
+            .AsQueryable()
+            .ToListAsync();
+
+            // Filtering
+            if (!string.IsNullOrEmpty(query.Search))
+                products = products.Where(p => p.Name.Contains(query.Search, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (query.MinPrice.HasValue)
+                products = products.Where(p => p.Price >= query.MinPrice.Value).ToList();
+
+            if (query.MaxPrice.HasValue)
+                products = products.Where(p => p.Price <= query.MaxPrice.Value).ToList();
+
+            if (query.CategoryId.HasValue)
+                products = products.Where(p => p.CategoryId == query.CategoryId.Value).ToList();
+
+            // Sorting
+            products = query.SortBy?.ToLower() switch
             {
-                Id = x.Id,
-                Name = x.Name,
-                Price = x.Price,
-                Description = x.Description,
-                Category = x.Category.Name
-            }));
+                "price" => query.Descending ? products.OrderByDescending(p => p.Price).ToList()
+                                            : products.OrderBy(p => p.Price).ToList(),
+                "name" => query.Descending ? products.OrderByDescending(p => p.Name).ToList()
+                                            : products.OrderBy(p => p.Name).ToList(),
+                _ => products.OrderBy(p => p.Id).ToList()
+            };
+
+            // Paging
+            var totalItems = products.Count;
+            var totalPages = (int)Math.Ceiling(totalItems / (double)query.PageSize);
+
+            var paged = products
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .Select(p => new ProductResponseDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Price = p.Price,
+                    Description = p.Description,
+                    Category = p.Category?.Name
+                });
+
+            return Ok(new
+            {
+                TotalItems = totalItems,
+                TotalPages = totalPages,
+                CurrentPage = query.Page,
+                PageSize = query.PageSize,
+                Items = paged
+            });
+
         }
 
         [HttpGet("{id}")]

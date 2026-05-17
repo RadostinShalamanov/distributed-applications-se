@@ -28,26 +28,62 @@ namespace E_Commerce.API.Controllers
 
         [HttpGet]
 
-        public async Task<ActionResult<IEnumerable<OrderResponseDto>>> GetOrders()
+        public async Task<ActionResult<IEnumerable<OrderResponseDto>>> GetOrders([FromQuery] OrderQueryParameter query)
         {
             var orders = await _service.GetAllOrders();
 
-            return Ok(orders.Select(o => new OrderResponseDto
+
+            if (!string.IsNullOrEmpty(query.Status) && Enum.TryParse<OrderStatus>(query.Status, true, out var status))
+                orders = orders.Where(o => o.Status == status).ToList();
+
+            if (query.IsPaid.HasValue)
+                orders = orders.Where(o => o.IsPaid == query.IsPaid.Value).ToList();
+
+            if (query.FromDate.HasValue)
+                orders = orders.Where(o => o.OrderDate >= query.FromDate.Value).ToList();
+
+            if (query.ToDate.HasValue)
+                orders = orders.Where(o => o.OrderDate <= query.ToDate.Value).ToList();
+
+            orders = query.SortBy?.ToLower() switch
             {
-                Id = o.Id,
-                UserId = o.UserId,
-                Address = o.Address,
-                TotalPrice = o.TotalPrice,
-                IsPaid = o.IsPaid,
-                Status = o.Status,
-                OrderDate = o.OrderDate,
-                Items = o.OrderItems.Select(i => new OrderItemResponseDto
+                "date" => query.Descending ? orders.OrderByDescending(o => o.OrderDate).ToList()
+                                                 : orders.OrderBy(o => o.OrderDate).ToList(),
+                "totalprice" => query.Descending ? orders.OrderByDescending(o => o.TotalPrice).ToList()
+                                                 : orders.OrderBy(o => o.TotalPrice).ToList(),
+                _ => orders.OrderByDescending(o => o.OrderDate).ToList()
+            };
+
+            var totalItems = orders.Count();
+            var totalPages = (int)Math.Ceiling(totalItems / (double)query.PageSize);
+
+            var paged = orders
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .Select(o => new OrderResponseDto
                 {
-                    ProductId = i.ProductId,
-                    Quantity = i.Quantity,
-                    Price = i.Price
-                }).ToList()
-            }));
+                    Id = o.Id,
+                    Address = o.Address,
+                    TotalPrice = o.TotalPrice,
+                    IsPaid = o.IsPaid,
+                    Status = o.Status,
+                    OrderDate = o.OrderDate,
+                    Items = o.OrderItems.Select(i => new OrderItemResponseDto
+                    {
+                        ProductId = i.ProductId,
+                        Quantity = i.Quantity,
+                        Price = i.Price
+                    }).ToList()
+                });
+
+            return Ok(new
+            {
+                TotalItems = totalItems,
+                TotalPages = totalPages,
+                CurrentPage = query.Page,
+                PageSize = query.PageSize,
+                Items = paged
+            });
         }
 
         [HttpGet("{id}")]

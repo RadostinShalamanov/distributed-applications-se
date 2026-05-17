@@ -24,7 +24,12 @@ namespace E_Commerce.API
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             builder.Services.AddDbContext<ECommerceDbContext>(options =>
             options.UseSqlServer(connectionString, b => b.MigrationsAssembly("E-Commerce.Data")));
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.Converters.Add(
+                        new System.Text.Json.Serialization.JsonStringEnumConverter());
+                });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 
 

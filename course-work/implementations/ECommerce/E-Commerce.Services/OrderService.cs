@@ -97,7 +97,9 @@ namespace E_Commerce.Services
 
         public async Task UpdateStatus(int orderId, OrderStatus status)
         {
-            var order = await _context.Orders.FindAsync(orderId);
+            var order = await _context.Orders
+                .Include(o => o.User)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
             if (order == null)
             {
                 throw new Exception($"Order with id - {order.Id} is not available");
@@ -107,9 +109,9 @@ namespace E_Commerce.Services
 
             await _context.SaveChangesAsync();
 
-            await _emailService.SendEmail(order.User.Email,
-                "Order status updated",
-                $"Hello {order.User.Username}, your order #{order.Id} status is now: {status}");
+            //await _emailService.SendEmail(order.User.Email,
+            //    "Order status updated",
+            //    $"Hello {order.User.Username}, your order #{order.Id} status is now: {status}");
         }
     }
 }

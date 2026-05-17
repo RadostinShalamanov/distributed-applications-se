@@ -26,19 +26,50 @@ namespace E_Commerce.API.Controllers
 
         [HttpGet]
 
-        public async Task<ActionResult<IEnumerable<CategoryResponseDto>>> GetCategories()
+        public async Task<ActionResult<IEnumerable<CategoryResponseDto>>> GetCategories([FromQuery] CategoryQueryParameter query)
         {
             var categories = await _service.GetAll(x => x.Products);
-            return Ok(categories.Select(x => new CategoryResponseDto
+
+            if (!string.IsNullOrEmpty(query.Search))
+                categories = categories.Where(c => c.Name.Contains(query.Search, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (!string.IsNullOrEmpty(query.Name))
+                categories = categories.Where(c => c.Name.Contains(query.Name, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            categories = query.SortBy?.ToLower() switch
             {
-                Id = x.Id,
-                Name = x.Name,
-                Products = x.Products.Select(s => new ProductCategoryResponseDto
+                "name" => query.Descending ? categories.OrderByDescending(c => c.Name).ToList()
+                                           : categories.OrderBy(c => c.Name).ToList(),
+                _ => categories.OrderBy(c => c.Id).ToList()
+            };
+
+            var totalItems = categories.Count();
+            var totalPages = (int)Math.Ceiling(totalItems / (double)query.PageSize);
+
+            var paged = categories
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .Select(x => new CategoryResponseDto
                 {
-                    Name = s.Name,
-                    Description = s.Description
-                }).ToList()
-            }));
+                    Id = x.Id,
+                    Name = x.Name,
+                    Products = x.Products.Select(s => new ProductCategoryResponseDto
+                    {
+                        Name = s.Name,
+                        Description = s.Description
+                    }).ToList()
+                });
+
+            return Ok(new
+            {
+                TotalItems = totalItems,
+                TotalPages = totalPages,
+                CurrentPage = query.Page,
+                PageSize = query.PageSize,
+                Items = paged
+            });
+
+
         }
 
         [HttpPost]

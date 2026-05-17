@@ -28,30 +28,70 @@ namespace E_Commerce.API.Controllers
 
         [HttpGet]
 
-        public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetUsers()
+        public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetUsers([FromQuery] UserQueryParameter query)
         {
             var users = await _service.GetUsers();
 
-            return Ok(users.Select(x => new UserResponseDto
+
+            if (!string.IsNullOrEmpty(query.Search))
+                users = users.Where(u => u.Username.Contains(query.Search, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (!string.IsNullOrEmpty(query.Email))
+                users = users.Where(u => u.Email.Contains(query.Email, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (!string.IsNullOrEmpty(query.Role))
+                users = users.Where(u => u.Role.Contains(query.Role, StringComparison.OrdinalIgnoreCase)).ToList();
+
+
+            users = query.SortBy?.ToLower() switch
             {
-                Id = x.Id,
-                Username = x.Username,
-                Email = x.Email,
-                CreatedAt = x.CreatedAt,
-                Role = x.Role,
-                Orders = x.Orders.Select(o => new OrderResponseDto
+                "username" => query.Descending ? users.OrderByDescending(u => u.Username).ToList()
+                                               : users.OrderBy(u => u.Username).ToList(),
+                "email" => query.Descending ? users.OrderByDescending(u => u.Email).ToList()
+                                               : users.OrderBy(u => u.Email).ToList(),
+                "role" => query.Descending ? users.OrderByDescending(u => u.Role).ToList()
+                                               : users.OrderBy(u => u.Role).ToList(),
+                _ => users.OrderBy(u => u.Id).ToList()
+            };
+
+
+            var totalItems = users.Count();
+            var totalPages = (int)Math.Ceiling(totalItems / (double)query.PageSize);
+
+            var paged = users.
+                Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .Select(x => new UserResponseDto
                 {
-                    Id = o.Id,
-                    Address = o.Address,
-                    TotalPrice = o.TotalPrice,
-                    Items = o.OrderItems.Select(oi => new OrderItemResponseDto
+                    Id = x.Id,
+                    Username = x.Username,
+                    Email = x.Email,
+                    CreatedAt = x.CreatedAt,
+                    Role = x.Role,
+                    Orders = x.Orders.Select(o => new OrderResponseDto
                     {
-                        ProductId = oi.ProductId,
-                        Quantity = oi.Quantity,
-                        Price = oi.Price
+                        Id = o.Id,
+                        Address = o.Address,
+                        TotalPrice = o.TotalPrice,
+                        IsPaid = o.IsPaid,
+                        Status = o.Status,
+                        Items = o.OrderItems.Select(oi => new OrderItemResponseDto
+                        {
+                            ProductId = oi.ProductId,
+                            Quantity = oi.Quantity,
+                            Price = oi.Price
+                        }).ToList()
                     }).ToList()
-                }).ToList()
-            }));
+                });
+
+            return Ok(new
+            {
+                TotalItems = totalItems,
+                TotalPages = totalPages,
+                CurrentPage = query.Page,
+                PageSize = query.PageSize,
+                Items = paged
+            });
         }
 
         [HttpGet("{id}")]
