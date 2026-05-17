@@ -16,12 +16,14 @@ namespace E_Commerce.Services
     public class OrderService : BaseService<Order>, IOrderService
     {
         private readonly ECommerceDbContext _context;
-
+        private readonly IEmailService _emailService;
 
         public OrderService(ECommerceDbContext context,
-            IBaseRepository<Order> repository) : base(repository)
+            IBaseRepository<Order> repository,
+            IEmailService emailService) : base(repository)
         {
             _context = context;
+            _emailService = emailService;
         }
         public async Task<Order> CreateOrder(Order order)
         {
@@ -104,6 +106,10 @@ namespace E_Commerce.Services
             order.Status = status;
 
             await _context.SaveChangesAsync();
+
+            await _emailService.SendEmail(order.User.Email,
+                "Order status updated",
+                $"Hello {order.User.Username}, your order #{order.Id} status is now: {status}");
         }
     }
 }

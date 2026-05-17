@@ -20,7 +20,12 @@ namespace E_Commerce.Services
             _context = context;
         }
 
-        public async Task<User> GetByEmail(string email)
+        public async Task<bool> ExistsAsync(string email)
+        {
+            return await _context.Users.AnyAsync(u => u.Email == email);
+        }
+
+        public async Task<User?> GetByEmail(string email)
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         }
@@ -30,7 +35,7 @@ namespace E_Commerce.Services
             return await _context.Users
                .Include(u => u.Orders)
                .ThenInclude(ui => ui.OrderItems)
-               .ThenInclude(p=>p.Product)
+               .ThenInclude(p => p.Product)
                .ToListAsync();
         }
     }

@@ -4,6 +4,7 @@ using E_Commerce.API.DTOs.User;
 using E_Commerce.Data;
 using E_Commerce.Data.Data;
 using E_Commerce.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,7 @@ namespace E_Commerce.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class UsersController : ControllerBase
     {
         private readonly ECommerceDbContext _context;
@@ -76,14 +78,14 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpPost]
-
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> CreateUser([FromBody] UserRequestDto dto)
         {
             var user = new User
             {
                 Username = dto.Username,
                 Email = dto.Email,
-                PasswordHash = dto.PasswordHash,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.PasswordHash),
                 Role = dto.Role
             };
 
@@ -94,7 +96,7 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpPut("{id}")]
-
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, UserRequestDto dto)
         {
             var user = await _service.GetById(id);
@@ -116,7 +118,7 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpDelete]
-
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             await _service.Delete(id);

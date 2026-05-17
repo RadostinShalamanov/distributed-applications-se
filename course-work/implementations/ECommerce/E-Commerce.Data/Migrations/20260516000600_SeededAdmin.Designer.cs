@@ -4,6 +4,7 @@ using E_Commerce.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace E_Commerce.Data.Migrations
 {
     [DbContext(typeof(ECommerceDbContext))]
-    partial class ECommerceDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260516000600_SeededAdmin")]
+    partial class SeededAdmin
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -197,9 +200,9 @@ namespace E_Commerce.Data.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 5, 17, 12, 39, 56, 718, DateTimeKind.Utc).AddTicks(5054),
+                            CreatedAt = new DateTime(2026, 5, 16, 0, 5, 59, 522, DateTimeKind.Utc).AddTicks(3584),
                             Email = "admin@admin.com",
-                            PasswordHash = "$2a$11$mq88X/CbgnoHV.O7kmk0MequsDnxWAtfS8HZoTPxRTBr1kivD7xj6",
+                            PasswordHash = "admin_1234",
                             Role = "Admin",
                             Username = "Admin1"
                         });

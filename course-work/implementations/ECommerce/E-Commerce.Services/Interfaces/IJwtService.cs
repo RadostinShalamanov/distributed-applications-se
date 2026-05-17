@@ -7,10 +7,9 @@ using System.Threading.Tasks;
 
 namespace E_Commerce.Services.Interfaces
 {
-    public interface IUserService : IBaseService<User>
+    public interface IJwtService
     {
-        Task<User> GetByEmail(string email);
-        Task<bool> ExistsAsync(string email);
-        Task<IEnumerable<User>> GetUsers();
+       
+        string GetJwt(User user);
     }
 }

@@ -1,4 +1,5 @@
-﻿using E_Commerce.Data.Data;
+﻿using BCrypt.Net;
+using E_Commerce.Data.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -81,6 +82,21 @@ namespace E_Commerce.Data
             modelBuilder.Entity<Category>()
                 .HasIndex(c => c.Name)
                 .IsUnique();
+
+
+            modelBuilder.Entity<User>().HasData(
+                new User
+                {
+                    Id = 1,
+                    Username = "Admin1",
+                    Email = "admin@admin.com",
+                    Role = "Admin",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin_1234")
+
+                }
+            );
+
+
         }
     }
 }

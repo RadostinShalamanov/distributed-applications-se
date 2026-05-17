@@ -5,7 +5,11 @@ using E_Commerce.Repository;
 using E_Commerce.Repository.Interfaces;
 using E_Commerce.Services;
 using E_Commerce.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
 
 namespace E_Commerce.API
 {
@@ -22,8 +26,69 @@ namespace E_Commerce.API
             options.UseSqlServer(connectionString, b => b.MigrationsAssembly("E-Commerce.Data")));
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "E-Commerce API",
+                    Version = "v1"
+                });
+
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header,
+                    Description = "Enter JWT Token"
+                });
+
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+            });
+
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters =
+                    new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+
+                        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                        ValidAudience = builder.Configuration["Jwt:Audience"],
+
+                        IssuerSigningKey =
+                            new SymmetricSecurityKey(
+                                Encoding.UTF8.GetBytes(
+                                    builder.Configuration["Jwt:Key"]))
+                    };
+            });
+
+            builder.Services.AddAuthorization();
 
             //services
             builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
@@ -32,7 +97,8 @@ namespace E_Commerce.API
             builder.Services.AddScoped<IBaseRepository<Order>, BaseRepository<Order>>();
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IBaseRepository<User>, BaseRepository<User>>();
-
+            builder.Services.AddScoped<IEmailService, EmailService>();
+            builder.Services.AddScoped<IJwtService, JwtService>();
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -44,8 +110,8 @@ namespace E_Commerce.API
 
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();
             app.UseAuthorization();
-
 
             app.MapControllers();
 

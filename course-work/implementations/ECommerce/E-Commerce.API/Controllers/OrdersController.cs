@@ -5,6 +5,7 @@ using E_Commerce.Data.Data;
 using E_Commerce.Data.Data.Enums;
 using E_Commerce.Repository.Interfaces;
 using E_Commerce.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ namespace E_Commerce.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class OrdersController : ControllerBase
     {
         private readonly ECommerceDbContext _context;
@@ -63,7 +65,7 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpPost]
-
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromBody] OrderRequestDto dto)
         {
             var order = new Order
@@ -87,7 +89,7 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpPut("{id}")]
-
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, OrderUpdateDto dto)
         {
             var toUpdate = await _service.GetById(id);
@@ -105,7 +107,7 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpDelete("{id}")]
-
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             await _service.Delete(id);
@@ -114,7 +116,7 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpGet("{orderId}/total-price")]
-
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetTotalPriceByOrderId(int orderId)
         {
             var totalPrice = await _service.GetOrderPriceById(orderId);
@@ -126,7 +128,7 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpPatch("{id}/status")]
-
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateOrderStatusDto dto)
         {
             await _service.UpdateStatus(id, dto.Status);
