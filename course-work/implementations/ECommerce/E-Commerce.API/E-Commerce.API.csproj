@@ -25,4 +25,9 @@
     <ProjectReference Include="..\E-Commerce.Services\E-Commerce.Services.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="DTOs\Validation\Category\" />
+    <Folder Include="DTOs\Validation\User\" />
+  </ItemGroup>
+
 </Project>
