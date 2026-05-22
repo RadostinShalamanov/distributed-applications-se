@@ -10,6 +10,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace E_Commerce.Services
 {
@@ -38,7 +39,6 @@ namespace E_Commerce.Services
             foreach (var item in order.OrderItems)
             {
 
-
                 var product = await _context.Products.FindAsync(item.ProductId);
                 if (product == null)
                 {
@@ -55,13 +55,41 @@ namespace E_Commerce.Services
             return order;
         }
 
-        public async Task<IEnumerable<Order>> GetAllOrders()
+        public async Task<IEnumerable<Order>> GetAllOrders(int? loggedUserId, bool isAdmin)
         {
-            return await _context.Orders
+            var response = _context.Orders
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (!isAdmin && loggedUserId.HasValue)
+            {
+                response = response.Where(o => o.UserId == loggedUserId.Value);
+            }
+
+            return await response.ToListAsync();
+        }
+
+        public async Task<Order?> GetOrderById(int id, int? loggedUserId, bool isAdmin)
+        {
+            var response = await _context.Orders
+                 .Include(o => o.User)
+                 .Include(o => o.OrderItems)
+                 .ThenInclude(oi => oi.Product)
+                 .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (response == null)
+            {
+                throw new Exception($"Order with id - {response.Id} is not available");
+            }
+
+            if (!isAdmin && loggedUserId.HasValue && response.UserId != loggedUserId.Value)
+            {
+                throw new UnauthorizedAccessException("You are not authorized to view this order.");
+            }
+
+            return response;
         }
 
         public async Task<decimal> GetOrderPriceById(int orderId)
@@ -77,15 +105,19 @@ namespace E_Commerce.Services
 
         }
 
-        public async Task PayOrder(int orderId, decimal amount)
+        public async Task PayOrder(int orderId, decimal amount, int? loggedUserId, bool isAdmin)
         {
             var order = await _context.Orders.FindAsync(orderId);
             if (order == null)
             {
-                throw new Exception($"Order with id - {order.Id} is not available");
+                throw new Exception($"Order with id - {orderId} is not available");
+            }
+            if (!isAdmin && loggedUserId.HasValue && order.UserId != loggedUserId.Value)
+            {
+                throw new UnauthorizedAccessException("You cannot pay for an order that does not belong to you.");
             }
 
-            if (amount < order.TotalPrice || amount > order.TotalPrice)
+            if (amount != order.TotalPrice)
             {
                 throw new Exception("Insufficient amount");
             }
@@ -102,7 +134,7 @@ namespace E_Commerce.Services
                 .FirstOrDefaultAsync(o => o.Id == orderId);
             if (order == null)
             {
-                throw new Exception($"Order with id - {order.Id} is not available");
+                throw new Exception($"Order with id - {orderId} is not available");
             }
 
             order.Status = status;

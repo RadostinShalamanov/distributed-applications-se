@@ -13,7 +13,7 @@ namespace E_Commerce.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public class UsersController : ControllerBase
     {
         private readonly ECommerceDbContext _context;
@@ -78,7 +78,7 @@ namespace E_Commerce.API.Controllers
                         Items = o.OrderItems.Select(oi => new OrderItemResponseDto
                         {
                             ProductId = oi.ProductId,
-                            ProductName=oi.Product.Name,
+                            ProductName = oi.Product.Name,
                             Quantity = oi.Quantity,
                             Price = oi.Price
                         }).ToList()
@@ -171,7 +171,7 @@ namespace E_Commerce.API.Controllers
             return Ok();
         }
 
-        [HttpDelete]
+        [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
             await _service.Delete(id);

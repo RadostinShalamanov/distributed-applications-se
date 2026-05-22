@@ -12,12 +12,14 @@ namespace E_Commerce.Services.Interfaces
     {
         Task<Order> CreateOrder(Order order);
 
-        Task<IEnumerable<Order>> GetAllOrders();
+        Task<IEnumerable<Order>> GetAllOrders(int? loggedUserId, bool isAdmin);
+
+        Task<Order> GetOrderById(int id, int? loggedUserId, bool isAdmin);
 
         Task<decimal> GetOrderPriceById(int orderId);
 
         Task UpdateStatus(int orderId, OrderStatus status);
 
-        Task PayOrder(int orderId, decimal amount);
+        Task PayOrder(int orderId, decimal amount, int? loggedUserId, bool isAdmin);
     }
 }

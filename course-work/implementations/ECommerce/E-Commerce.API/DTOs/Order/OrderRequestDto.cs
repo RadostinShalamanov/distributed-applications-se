@@ -5,7 +5,7 @@
         public int UserId { get; set; }
 
         public string Address { get; set; }
-        public DateTime OrderDate { get; set; }
+        public DateTime OrderDate { get; set; } = DateTime.UtcNow;
 
         public ICollection<OrderItemRequestDto> Items { get; set; }
     }

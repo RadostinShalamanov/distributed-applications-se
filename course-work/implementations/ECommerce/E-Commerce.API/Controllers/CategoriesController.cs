@@ -74,7 +74,7 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpPost]
-        
+        [Authorize(Roles="Admin")]
         public async Task<IActionResult> Create([FromBody] CategoryRequestDto dto)
         {
             var category = new Category
@@ -90,7 +90,7 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpPut("{id}")]
-        
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, CategoryRequestDto dto)
         {
             var toUpdate = await _service.GetById(id);
@@ -109,7 +109,7 @@ namespace E_Commerce.API.Controllers
 
 
         [HttpDelete("{id}")]
-      
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             await _service.Delete(id);

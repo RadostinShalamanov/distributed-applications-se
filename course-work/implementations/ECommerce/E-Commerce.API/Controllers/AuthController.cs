@@ -39,11 +39,18 @@ namespace E_Commerce.API.Controllers
 
             }
 
+            if (dto.Password != dto.ConfirmPassword)
+            {
+                ModelState.AddModelError("Password", "Passwords do not match.");
+                return Conflict(ApiResponse<object>.Fail(ModelState));
+            }
+
             var newUser = new User
             {
                 Username = dto.Username,
                 Email = dto.Email,
-                PasswordHash = dto.Password
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                Role = "Customer"
             };
 
             await _userService.Add(newUser);

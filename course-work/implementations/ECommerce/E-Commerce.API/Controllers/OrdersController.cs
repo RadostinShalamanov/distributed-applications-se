@@ -30,8 +30,11 @@ namespace E_Commerce.API.Controllers
 
         public async Task<ActionResult<IEnumerable<OrderResponseDto>>> GetOrders([FromQuery] OrderQueryParameter query)
         {
-            var orders = await _service.GetAllOrders();
 
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            int? loggedUserId = int.TryParse(userIdClaim, out var id) ? id : null;
+            bool isAdmin = User.IsInRole("Admin");
+            var orders = await _service.GetAllOrders(loggedUserId, isAdmin);
 
             if (!string.IsNullOrEmpty(query.Status) && Enum.TryParse<OrderStatus>(query.Status, true, out var status))
                 orders = orders.Where(o => o.Status == status).ToList();
@@ -71,7 +74,7 @@ namespace E_Commerce.API.Controllers
                     Items = o.OrderItems.Select(i => new OrderItemResponseDto
                     {
                         ProductId = i.ProductId,
-                        ProductName=i.Product.Name,
+                        ProductName = i.Product.Name,
                         Quantity = i.Quantity,
                         Price = i.Price
                     }).ToList()
@@ -91,23 +94,51 @@ namespace E_Commerce.API.Controllers
 
         public async Task<ActionResult> GetById(int id)
         {
-            var order = await _service.GetById(id);
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            int? loggedUserId = int.TryParse(userIdClaim, out var userId) ? userId : null;
+            bool isAdmin = User.IsInRole("Admin");
+            var order = await _service.GetOrderById(id, loggedUserId, isAdmin);
 
             if (order == null)
             {
                 return NotFound();
             }
 
-            return Ok(order);
+
+
+            var response = new OrderResponseDto
+            {
+                Id = order.Id,
+                Address = order.Address,
+                TotalPrice = order.TotalPrice,
+                IsPaid = order.IsPaid,
+                Status = order.Status,
+                OrderDate = order.OrderDate,
+                Items = order.OrderItems.Select(i => new OrderItemResponseDto
+                {
+                    ProductId = i.ProductId,
+                    ProductName = i.Product.Name,
+                    Quantity = i.Quantity,
+                    Price = i.Price
+                }).ToList()
+            };
+
+            return Ok(response);
         }
 
         [HttpPost]
-      
         public async Task<IActionResult> Create([FromBody] OrderRequestDto dto)
         {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim)) return Unauthorized();
+            int loggedUserId = int.Parse(userIdClaim);
+            bool isAdmin = User.IsInRole("Admin");
+
+            
+
             var order = new Order
             {
-                UserId = dto.UserId,
+                UserId = isAdmin ? dto.UserId : loggedUserId,
                 OrderDate = dto.OrderDate,
                 Address = dto.Address,
                 IsPaid = false,
@@ -126,6 +157,7 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, OrderUpdateDto dto)
         {
             var toUpdate = await _service.GetById(id);
@@ -143,6 +175,7 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             await _service.Delete(id);
@@ -151,6 +184,7 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpGet("{orderId}/total-price")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetTotalPriceByOrderId(int orderId)
         {
             var totalPrice = await _service.GetOrderPriceById(orderId);
@@ -162,6 +196,7 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpPatch("{id}/status")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateOrderStatusDto dto)
         {
             await _service.UpdateStatus(id, dto.Status);
@@ -175,7 +210,10 @@ namespace E_Commerce.API.Controllers
 
         public async Task<IActionResult> PayOrder(int orderId, [FromBody] UpdatePaymentDto dto)
         {
-            await _service.PayOrder(orderId, dto.Amount);
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            int? loggedUserId = int.TryParse(userIdClaim, out var id) ? id : null;
+            bool isAdmin = User.IsInRole("Admin");
+            await _service.PayOrder(orderId, dto.Amount, loggedUserId, isAdmin);
 
             return Ok(new
             {
