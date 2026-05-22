@@ -19,7 +19,7 @@ namespace E_Commerce.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+            
 
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             builder.Services.AddDbContext<ECommerceDbContext>(options =>
@@ -34,6 +34,7 @@ namespace E_Commerce.API
 
 
             builder.Services.AddEndpointsApiExplorer();
+            //section for auth in swagger
             builder.Services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc("v1", new OpenApiInfo
@@ -104,6 +105,7 @@ namespace E_Commerce.API
             builder.Services.AddScoped<IBaseRepository<User>, BaseRepository<User>>();
             builder.Services.AddScoped<IEmailService, EmailService>();
             builder.Services.AddScoped<IJwtService, JwtService>();
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

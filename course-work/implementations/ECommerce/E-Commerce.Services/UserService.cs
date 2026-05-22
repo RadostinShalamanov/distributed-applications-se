@@ -30,6 +30,15 @@ namespace E_Commerce.Services
             return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         }
 
+        public async Task<User?> GetUserById(int id)
+        {
+            return await _context.Users
+              .Include(u => u.Orders)
+              .ThenInclude(ui => ui.OrderItems)
+              .ThenInclude(p => p.Product)
+              .FirstOrDefaultAsync(x => x.Id == id);
+        }
+
         public async Task<IEnumerable<User>> GetUsers()
         {
             return await _context.Users

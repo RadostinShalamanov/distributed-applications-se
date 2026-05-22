@@ -83,7 +83,7 @@ namespace E_Commerce.Data
                 .HasIndex(c => c.Name)
                 .IsUnique();
 
-
+            //seeded an admin user
             modelBuilder.Entity<User>().HasData(
                 new User
                 {

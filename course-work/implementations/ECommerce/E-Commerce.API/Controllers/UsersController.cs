@@ -78,6 +78,7 @@ namespace E_Commerce.API.Controllers
                         Items = o.OrderItems.Select(oi => new OrderItemResponseDto
                         {
                             ProductId = oi.ProductId,
+                            ProductName=oi.Product.Name,
                             Quantity = oi.Quantity,
                             Price = oi.Price
                         }).ToList()
@@ -98,7 +99,7 @@ namespace E_Commerce.API.Controllers
 
         public async Task<ActionResult<UserResponseDto>> GetUserById(int id)
         {
-            var user = await _service.GetById(id);
+            var user = await _service.GetUserById(id);
             if (user == null)
             {
                 return NotFound();
@@ -111,14 +112,28 @@ namespace E_Commerce.API.Controllers
                 Username = user.Username,
                 Email = user.Email,
                 Role = user.Role,
-                CreatedAt = user.CreatedAt
+                CreatedAt = user.CreatedAt,
+                Orders = user.Orders.Select(o => new OrderResponseDto
+                {
+                    Id = o.Id,
+                    Address = o.Address,
+                    TotalPrice = o.TotalPrice,
+                    IsPaid = o.IsPaid,
+                    Status = o.Status,
+                    Items = o.OrderItems.Select(oi => new OrderItemResponseDto
+                    {
+                        ProductId = oi.ProductId,
+                        ProductName = oi.Product.Name,
+                        Quantity = oi.Quantity,
+                        Price = oi.Price
+                    }).ToList()
+                }).ToList()
             };
 
             return Ok(response);
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> CreateUser([FromBody] UserRequestDto dto)
         {
             var user = new User
@@ -136,7 +151,6 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, UserRequestDto dto)
         {
             var user = await _service.GetById(id);
@@ -158,7 +172,6 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpDelete]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             await _service.Delete(id);

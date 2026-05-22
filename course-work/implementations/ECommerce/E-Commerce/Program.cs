@@ -1,4 +1,5 @@
 using E_Commerce.Data;
+using E_Commerce.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace E_Commerce
@@ -12,6 +13,7 @@ namespace E_Commerce
             
             builder.Services.AddControllersWithViews();
 
+           
             var app = builder.Build();
 
 

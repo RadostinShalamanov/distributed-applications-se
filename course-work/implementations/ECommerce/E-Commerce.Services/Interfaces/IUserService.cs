@@ -12,5 +12,7 @@ namespace E_Commerce.Services.Interfaces
         Task<User> GetByEmail(string email);
         Task<bool> ExistsAsync(string email);
         Task<IEnumerable<User>> GetUsers();
+
+        Task<User> GetUserById(int id);
     }
 }

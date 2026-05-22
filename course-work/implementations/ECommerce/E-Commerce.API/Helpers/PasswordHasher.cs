@@ -1,4 +1,4 @@
-﻿using BCrypt.Net;
+﻿using BCrypt.Net; // framework for hashing the input passwords
 namespace E_Commerce.API.Helpers
 {
     public static class PasswordHasher
