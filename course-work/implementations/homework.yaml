@@ -1,0 +1,1582 @@
+openapi: 3.0.4
+
+info:
+  title: E-Commerce API
+  version: v1
+  description: >
+    REST API for an e-commerce platform. Supports user management, product and category
+    browsing, order placement and tracking, and payment processing. All protected endpoints
+    require a JWT Bearer token obtained via `/api/Auth/login` or `/api/Auth/register`.
+
+tags:
+  - name: Auth
+    description: User authentication and registration
+  - name: Users
+    description: Management of user accounts and roles
+  - name: Categories
+    description: Management of product categories
+  - name: Products
+    description: Management of the product catalogue with pricing and category association
+  - name: Orders
+    description: Order placement, tracking, status updates, and payment processing
+
+paths:
+
+  # ── Auth ──────────────────────────────────────────────────────────────────
+
+  /api/Auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      description: >
+        Creates a new user account. The username and email must be unique.
+        On successful registration a JWT token is returned, allowing the user
+        to immediately start using the API.
+      operationId: Auth_Register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterDto'
+            example:
+              username: jane_doe
+              email: jane@example.com
+              password: S3cur3P@ssw0rd!
+      responses:
+        '201':
+          description: User successfully registered. Returns a JWT token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+              example:
+                token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                userId: 1
+                username: jane_doe
+        '400':
+          description: Invalid input data (e.g. missing required fields or password too weak).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '409':
+          description: A user with that username or email already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: A user with that email already exists.
+
+  /api/Auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in to the system
+      description: >
+        Authenticates an existing user by email and password, and returns a JWT Bearer token.
+        The token must be sent in the `Authorization: Bearer <token>` header
+        with all protected requests.
+      operationId: Auth_Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDto'
+            example:
+              email: jane@example.com
+              password: S3cur3P@ssw0rd!
+      responses:
+        '200':
+          description: Successful login. Returns a JWT token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+              example:
+                token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                userId: 1
+                username: jane_doe
+        '400':
+          description: Required fields are missing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          description: Invalid email or password.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Invalid email or password.
+
+  # ── Users ─────────────────────────────────────────────────────────────────
+
+  /api/Users:
+    get:
+      tags: [Users]
+      summary: List users (paginated, with filters)
+      description: >
+        Returns a paginated list of users. Accessible to administrators only.
+        Supports filtering by role and email, and sorting on any field.
+      operationId: Users_GetAll
+      security:
+        - Bearer: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Descending'
+        - name: Role
+          in: query
+          description: Filter by role (exact match, e.g. `Admin`, `Customer`).
+          schema:
+            type: string
+            example: Customer
+        - name: Email
+          in: query
+          description: Filter by email address (partial match, case-insensitive).
+          schema:
+            type: string
+            format: email
+            example: jane@example.com
+      responses:
+        '200':
+          description: Successfully returned list of users.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponseDtoPagedResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Users]
+      summary: Create a user (admin)
+      description: >
+        Creates a new user account with an explicit role assignment.
+        Intended for administrative use; regular users should register via `/api/Auth/register`.
+      operationId: Users_Create
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequestDto'
+            example:
+              username: jane_doe
+              email: jane@example.com
+              passwordHash: $2a$12$...
+              role: Customer
+      responses:
+        '201':
+          description: User successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags: [Users]
+      summary: Delete a user (admin)
+      description: >
+        Deletes the specified user account. All associated orders remain in the system
+        for audit purposes but are disassociated from the user.
+      operationId: Users_Delete
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: ID of the user to delete.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            example: 1
+      responses:
+        '204':
+          description: User successfully deleted. No response body.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/Users/{id}:
+    get:
+      tags: [Users]
+      summary: Get a specific user
+      description: >
+        Returns the full profile of a user, including their role and associated orders.
+        Regular users may only retrieve their own profile; administrators may retrieve any.
+      operationId: Users_GetById
+      security:
+        - Bearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Successfully returned user profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponseDto'
+              example:
+                id: 1
+                username: jane_doe
+                email: jane@example.com
+                role: Customer
+                createdAt: '2025-01-10T09:00:00Z'
+                orders: []
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Users]
+      summary: Update a user
+      description: >
+        Updates user details such as username, email, or role.
+        Regular users may only update their own profile; administrators may update any.
+      operationId: Users_Update
+      security:
+        - Bearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequestDto'
+      responses:
+        '204':
+          description: User successfully updated. No response body.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Categories ────────────────────────────────────────────────────────────
+
+  /api/Categories:
+    get:
+      tags: [Categories]
+      summary: List categories (paginated, with filters)
+      description: >
+        Returns a paginated list of product categories.
+        Each category includes its associated products.
+        Supports filtering by name and full-text search.
+      operationId: Categories_GetAll
+      security:
+        - Bearer: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Descending'
+        - name: Name
+          in: query
+          description: Filter by category name (partial match, case-insensitive).
+          schema:
+            type: string
+            example: Electronics
+      responses:
+        '200':
+          description: Successfully returned list of categories.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponseDtoPagedResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Categories]
+      summary: Create a category
+      description: Creates a new product category. Accessible to administrators only.
+      operationId: Categories_Create
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequestDto'
+            example:
+              name: Electronics
+              description: Phones, laptops, tablets, and accessories.
+      responses:
+        '201':
+          description: Category successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/Categories/{id}:
+    put:
+      tags: [Categories]
+      summary: Update a category
+      description: Updates the name or description of an existing category. Accessible to administrators only.
+      operationId: Categories_Update
+      security:
+        - Bearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequestDto'
+      responses:
+        '204':
+          description: Category successfully updated. No response body.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Categories]
+      summary: Delete a category
+      description: >
+        Deletes the specified category. Only allowed if no products are currently
+        assigned to it; otherwise a 409 Conflict is returned.
+      operationId: Categories_Delete
+      security:
+        - Bearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '204':
+          description: Category successfully deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The category cannot be deleted because it still has products assigned to it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Cannot delete a category that contains products.
+
+  # ── Products ──────────────────────────────────────────────────────────────
+
+  /api/Products:
+    get:
+      tags: [Products]
+      summary: List products (paginated, with filters)
+      description: >
+        Returns a paginated list of products. Supports filtering by price range
+        and category, as well as full-text search by name or description.
+      operationId: Products_GetAll
+      security:
+        - Bearer: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Descending'
+        - name: MinPrice
+          in: query
+          description: Minimum product price (inclusive).
+          schema:
+            type: number
+            format: double
+            minimum: 0
+            example: 10.00
+        - name: MaxPrice
+          in: query
+          description: Maximum product price (inclusive).
+          schema:
+            type: number
+            format: double
+            minimum: 0
+            example: 500.00
+        - name: CategoryId
+          in: query
+          description: Filter by category ID — returns only products in that category.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            example: 3
+      responses:
+        '200':
+          description: Successfully returned list of products.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponseDtoPagedResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Products]
+      summary: Add a product
+      description: Adds a new product to the catalogue. Accessible to administrators only.
+      operationId: Products_Create
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequestDto'
+            example:
+              name: Wireless Headphones
+              price: 89.99
+              description: Over-ear noise-cancelling wireless headphones.
+              categoryId: 3
+      responses:
+        '201':
+          description: Product successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/Products/{id}:
+    get:
+      tags: [Products]
+      summary: Get a specific product
+      description: Returns full details of the product, including its price, description, and category.
+      operationId: Products_GetById
+      security:
+        - Bearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Successfully returned product.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponseDto'
+              example:
+                id: 12
+                name: Wireless Headphones
+                price: 89.99
+                description: Over-ear noise-cancelling wireless headphones.
+                category: Electronics
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Products]
+      summary: Update a product
+      description: Updates the product's name, price, description, or category. Accessible to administrators only.
+      operationId: Products_Update
+      security:
+        - Bearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequestDto'
+      responses:
+        '204':
+          description: Product successfully updated. No response body.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Products]
+      summary: Delete a product
+      description: >
+        Deletes the product from the catalogue. Only allowed if the product is not
+        referenced by any existing order items; otherwise a 409 Conflict is returned.
+      operationId: Products_Delete
+      security:
+        - Bearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '204':
+          description: Product successfully deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The product cannot be deleted because it is referenced by existing orders.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Cannot delete a product that is part of existing orders.
+
+  # ── Orders ────────────────────────────────────────────────────────────────
+
+  /api/Orders:
+    get:
+      tags: [Orders]
+      summary: List orders (paginated, with filters)
+      description: >
+        Returns a paginated list of orders. Administrators see all orders;
+        regular users see only their own. Supports filtering by status, payment
+        state, and date range.
+      operationId: Orders_GetAll
+      security:
+        - Bearer: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Descending'
+        - name: Status
+          in: query
+          description: Filter by order status (e.g. `Pending`, `Shipped`, `Delivered`).
+          schema:
+            $ref: '#/components/schemas/OrderStatus'
+        - name: IsPaid
+          in: query
+          description: Filter by payment state — `true` for paid orders, `false` for unpaid.
+          schema:
+            type: boolean
+            example: false
+        - name: FromDate
+          in: query
+          description: Start date filter for order placement date (inclusive, UTC).
+          schema:
+            type: string
+            format: date-time
+            example: '2025-01-01T00:00:00Z'
+        - name: ToDate
+          in: query
+          description: End date filter for order placement date (inclusive, UTC).
+          schema:
+            type: string
+            format: date-time
+            example: '2025-12-31T23:59:59Z'
+      responses:
+        '200':
+          description: Successfully returned list of orders.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponseDtoPagedResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Orders]
+      summary: Place a new order
+      description: >
+        Places a new order for the specified user. The request must include at least one
+        order item. The total price is calculated automatically from the current product
+        prices at the time of order placement.
+      operationId: Orders_Create
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequestDto'
+            example:
+              userId: 1
+              address: 123 Main St, Springfield, IL 62701
+              orderDate: '2025-06-15T10:00:00Z'
+              items:
+                - productId: 12
+                  quantity: 2
+                - productId: 7
+                  quantity: 1
+      responses:
+        '201':
+          description: Order successfully placed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: One or more of the specified products do not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Product with ID 7 was not found.
+
+  /api/Orders/{id}:
+    get:
+      tags: [Orders]
+      summary: Get a specific order
+      description: >
+        Returns full details of the order, including its items, total price, status,
+        and payment state. Regular users may only retrieve their own orders.
+      operationId: Orders_GetById
+      security:
+        - Bearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Successfully returned order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponseDto'
+              example:
+                id: 55
+                orderDate: '2025-06-15T10:00:00Z'
+                totalPrice: 269.97
+                address: 123 Main St, Springfield, IL 62701
+                isPaid: false
+                status: Pending
+                items:
+                  - productId: 12
+                    quantity: 2
+                    price: 89.99
+                  - productId: 7
+                    quantity: 1
+                    price: 89.99
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Orders]
+      summary: Update an order
+      description: >
+        Updates editable order fields (order date, delivery address).
+        Only orders in `Pending` status may be updated.
+      operationId: Orders_Update
+      security:
+        - Bearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderUpdateDto'
+      responses:
+        '204':
+          description: Order successfully updated. No response body.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The order cannot be updated because it is no longer in Pending status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Only orders with status Pending can be modified.
+
+    delete:
+      tags: [Orders]
+      summary: Cancel and delete an order
+      description: >
+        Cancels and removes the order. Only orders in `Pending` status may be deleted.
+        Accessible to the order owner or an administrator.
+      operationId: Orders_Delete
+      security:
+        - Bearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '204':
+          description: Order successfully deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The order cannot be deleted because it is no longer in Pending status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Only orders with status Pending can be deleted.
+
+  /api/Orders/{orderId}/total-price:
+    get:
+      tags: [Orders]
+      summary: Get the total price of an order
+      description: >
+        Returns the calculated total price of all items in the order.
+        This value reflects the product prices at the time of order placement.
+      operationId: Orders_GetTotalPrice
+      security:
+        - Bearer: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          description: Unique numeric identifier of the order.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            example: 55
+      responses:
+        '200':
+          description: Successfully calculated order total.
+          content:
+            application/json:
+              schema:
+                type: number
+                format: double
+                description: Total price of the order in the platform's base currency.
+                example: 269.97
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/Orders/{id}/status:
+    patch:
+      tags: [Orders]
+      summary: Update the status of an order
+      description: >
+        Updates the fulfillment status of an order. The allowed transition sequence is:
+        `Pending` → `Processing` → `Shipped` → `Delivered` (or `Cancelled` from any state).
+        Accessible to administrators only.
+      operationId: Orders_UpdateStatus
+      security:
+        - Bearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrderStatusDto'
+            example:
+              status: Shipped
+      responses:
+        '204':
+          description: Order status successfully updated. No response body.
+        '400':
+          description: The requested status transition is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Cannot transition from Delivered to Pending.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/Orders/{orderId}/pay:
+    patch:
+      tags: [Orders]
+      summary: Mark an order as paid
+      description: >
+        Records a payment against an order. The supplied `amount` must match the
+        order's total price exactly. Once paid, the order status automatically
+        transitions from `Pending` to `Processing`.
+      operationId: Orders_Pay
+      security:
+        - Bearer: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          description: Unique numeric identifier of the order to pay.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            example: 55
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePaymentDto'
+            example:
+              amount: 269.97
+      responses:
+        '204':
+          description: Payment successfully recorded. No response body.
+        '400':
+          description: The payment amount does not match the order total, or the order is already paid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Payment amount 200.00 does not match the order total 269.97.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+
+  securitySchemes:
+    Bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        JWT Bearer authentication. Obtain a token via `/api/Auth/login` or `/api/Auth/register`
+        and send it in the header: `Authorization: Bearer <token>`.
+
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      description: Unique numeric identifier of the resource.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        example: 1
+
+    Page:
+      name: Page
+      in: query
+      description: Page number for pagination (starts at 1).
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        default: 1
+        example: 1
+
+    PageSize:
+      name: PageSize
+      in: query
+      description: Number of results per page (maximum 100).
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 100
+        default: 20
+        example: 20
+
+    Search:
+      name: Search
+      in: query
+      description: Full-text search term applied across relevant text fields.
+      schema:
+        type: string
+        example: headphones
+
+    SortBy:
+      name: SortBy
+      in: query
+      description: Field name to sort results by (e.g. `name`, `price`, `createdAt`).
+      schema:
+        type: string
+        example: price
+
+    Descending:
+      name: Descending
+      in: query
+      description: When `true`, results are sorted in descending order.
+      schema:
+        type: boolean
+        default: false
+        example: false
+
+  responses:
+    BadRequest:
+      description: Invalid input data. Check the validation errors.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorResponse'
+
+    Unauthorized:
+      description: JWT token is missing or has expired. Authentication is required.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Unauthorized. Please log in to access this resource.
+
+    Forbidden:
+      description: You do not have permission to access this resource.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Access denied.
+
+    NotFound:
+      description: The requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Resource not found.
+
+  schemas:
+
+    # ── Auth ──────────────────────────────────────────────────────────────
+
+    RegisterDto:
+      type: object
+      description: Registration data for a new user account.
+      required:
+        - username
+        - email
+        - password
+      properties:
+        username:
+          type: string
+          description: Unique display name. Between 3 and 50 characters.
+          minLength: 3
+          maxLength: 50
+          example: jane_doe
+        email:
+          type: string
+          format: email
+          description: Unique email address used for login.
+          maxLength: 255
+          example: jane@example.com
+        password:
+          type: string
+          format: password
+          description: >
+            Password. Minimum 8 characters; must contain at least one uppercase letter,
+            one digit, and one special character.
+          minLength: 8
+          example: S3cur3P@ssw0rd!
+      additionalProperties: false
+
+    LoginDto:
+      type: object
+      description: Login credentials.
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: Registered email address.
+          example: jane@example.com
+        password:
+          type: string
+          format: password
+          description: Account password.
+          example: S3cur3P@ssw0rd!
+      additionalProperties: false
+
+    AuthResponseDto:
+      type: object
+      description: Response returned on successful authentication.
+      properties:
+        token:
+          type: string
+          description: JWT Bearer token to be used in subsequent requests.
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        userId:
+          type: integer
+          format: int32
+          description: ID of the authenticated user.
+          example: 1
+        username:
+          type: string
+          description: Display name of the authenticated user.
+          example: jane_doe
+      additionalProperties: false
+
+    # ── Users ─────────────────────────────────────────────────────────────
+
+    UserRequestDto:
+      type: object
+      description: Data for creating or updating a user account (admin use).
+      properties:
+        username:
+          type: string
+          description: Unique display name. Between 3 and 50 characters.
+          minLength: 3
+          maxLength: 50
+          example: jane_doe
+        email:
+          type: string
+          format: email
+          description: Unique email address.
+          maxLength: 255
+          example: jane@example.com
+        passwordHash:
+          type: string
+          description: Pre-hashed password value (bcrypt). Used only in admin-creation flows.
+          nullable: true
+          example: $2a$12$...
+        role:
+          type: string
+          description: User role. Accepted values are `Admin` and `Customer`.
+          enum: [Admin, Customer]
+          example: Customer
+      additionalProperties: false
+
+    UserResponseDto:
+      type: object
+      description: Full user profile including role and associated orders.
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Unique identifier of the user.
+          example: 1
+        username:
+          type: string
+          description: Display name.
+          example: jane_doe
+        email:
+          type: string
+          format: email
+          description: Email address.
+          example: jane@example.com
+        role:
+          type: string
+          description: User role (`Admin` or `Customer`).
+          example: Customer
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp (UTC).
+          example: '2025-01-10T09:00:00Z'
+        orders:
+          type: array
+          description: List of orders placed by this user.
+          items:
+            $ref: '#/components/schemas/OrderResponseDto'
+          nullable: true
+      additionalProperties: false
+
+    UserResponseDtoPagedResult:
+      type: object
+      description: Paginated list of user profiles.
+      allOf:
+        - $ref: '#/components/schemas/PagedResultBase'
+        - type: object
+          properties:
+            items:
+              type: array
+              description: User profiles for the current page.
+              items:
+                $ref: '#/components/schemas/UserResponseDto'
+              nullable: true
+      additionalProperties: false
+
+    # ── Categories ────────────────────────────────────────────────────────
+
+    CategoryRequestDto:
+      type: object
+      description: Data for creating or updating a product category.
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Category name. Must be unique. Maximum 100 characters.
+          minLength: 1
+          maxLength: 100
+          example: Electronics
+        description:
+          type: string
+          description: Short description of the category. Maximum 500 characters.
+          maxLength: 500
+          nullable: true
+          example: Phones, laptops, tablets, and accessories.
+      additionalProperties: false
+
+    CategoryResponseDto:
+      type: object
+      description: Product category with its associated products.
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Unique identifier of the category.
+          example: 3
+        name:
+          type: string
+          description: Category name.
+          example: Electronics
+        description:
+          type: string
+          description: Category description.
+          nullable: true
+          example: Phones, laptops, tablets, and accessories.
+        products:
+          type: array
+          description: Products belonging to this category.
+          items:
+            $ref: '#/components/schemas/ProductCategoryResponseDto'
+          nullable: true
+      additionalProperties: false
+
+    CategoryResponseDtoPagedResult:
+      type: object
+      description: Paginated list of product categories.
+      allOf:
+        - $ref: '#/components/schemas/PagedResultBase'
+        - type: object
+          properties:
+            items:
+              type: array
+              description: Categories for the current page.
+              items:
+                $ref: '#/components/schemas/CategoryResponseDto'
+              nullable: true
+      additionalProperties: false
+
+    # ── Products ──────────────────────────────────────────────────────────
+
+    ProductRequestDto:
+      type: object
+      description: Data for creating or updating a product.
+      required:
+        - name
+        - price
+        - categoryId
+      properties:
+        name:
+          type: string
+          description: Product name. Maximum 200 characters.
+          minLength: 1
+          maxLength: 200
+          example: Wireless Headphones
+        price:
+          type: number
+          format: double
+          description: Product price in the platform's base currency. Must be >= 0.
+          minimum: 0
+          example: 89.99
+        description:
+          type: string
+          description: Detailed product description. Maximum 2000 characters.
+          maxLength: 2000
+          nullable: true
+          example: Over-ear noise-cancelling wireless headphones.
+        categoryId:
+          type: integer
+          format: int32
+          description: ID of the category this product belongs to. Must exist.
+          minimum: 1
+          example: 3
+      additionalProperties: false
+
+    ProductResponseDto:
+      type: object
+      description: Product with full details including its category name.
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Unique identifier of the product.
+          example: 12
+        name:
+          type: string
+          description: Product name.
+          example: Wireless Headphones
+        price:
+          type: number
+          format: double
+          description: Product price.
+          example: 89.99
+        description:
+          type: string
+          description: Product description.
+          nullable: true
+          example: Over-ear noise-cancelling wireless headphones.
+        category:
+          type: string
+          description: Name of the category this product belongs to.
+          nullable: true
+          example: Electronics
+      additionalProperties: false
+
+    ProductResponseDtoPagedResult:
+      type: object
+      description: Paginated list of products.
+      allOf:
+        - $ref: '#/components/schemas/PagedResultBase'
+        - type: object
+          properties:
+            items:
+              type: array
+              description: Products for the current page.
+              items:
+                $ref: '#/components/schemas/ProductResponseDto'
+              nullable: true
+      additionalProperties: false
+
+    ProductCategoryResponseDto:
+      type: object
+      description: Lightweight product summary used inside a category response.
+      properties:
+        name:
+          type: string
+          description: Product name.
+          nullable: true
+          example: Wireless Headphones
+        description:
+          type: string
+          description: Product description.
+          nullable: true
+          example: Over-ear noise-cancelling wireless headphones.
+      additionalProperties: false
+
+    # ── Orders ────────────────────────────────────────────────────────────
+
+    OrderStatus:
+      type: string
+      description: Fulfillment status of an order.
+      enum:
+        - Pending
+        - Processing
+        - Shipped
+        - Delivered
+        - Cancelled
+      example: Pending
+
+    OrderItemRequestDto:
+      type: object
+      description: A single line item within an order request.
+      required:
+        - productId
+        - quantity
+      properties:
+        productId:
+          type: integer
+          format: int32
+          description: ID of the product to order. Must exist in the catalogue.
+          minimum: 1
+          example: 12
+        quantity:
+          type: integer
+          format: int32
+          description: Number of units to order. Must be at least 1.
+          minimum: 1
+          example: 2
+      additionalProperties: false
+
+    OrderItemResponseDto:
+      type: object
+      description: A single line item within an order response, with the unit price at time of purchase.
+      properties:
+        productId:
+          type: integer
+          format: int32
+          description: ID of the ordered product.
+          example: 12
+        quantity:
+          type: integer
+          format: int32
+          description: Number of units ordered.
+          example: 2
+        price:
+          type: number
+          format: double
+          description: Unit price of the product at the time the order was placed.
+          example: 89.99
+      additionalProperties: false
+
+    OrderRequestDto:
+      type: object
+      description: Data for placing a new order.
+      required:
+        - userId
+        - address
+        - orderDate
+        - items
+      properties:
+        userId:
+          type: integer
+          format: int32
+          description: ID of the user placing the order. Must match the authenticated user unless the caller is an administrator.
+          minimum: 1
+          example: 1
+        address:
+          type: string
+          description: Delivery address. Maximum 500 characters.
+          minLength: 1
+          maxLength: 500
+          example: 123 Main St, Springfield, IL 62701
+        orderDate:
+          type: string
+          format: date-time
+          description: Date and time the order is placed (UTC). Cannot be in the future.
+          example: '2025-06-15T10:00:00Z'
+        items:
+          type: array
+          description: List of order line items. Must contain at least one item.
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItemRequestDto'
+      additionalProperties: false
+
+    OrderResponseDto:
+      type: object
+      description: Full order record including items, status, and payment state.
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Unique identifier of the order.
+          example: 55
+        orderDate:
+          type: string
+          format: date-time
+          description: Date and time the order was placed (UTC).
+          example: '2025-06-15T10:00:00Z'
+        totalPrice:
+          type: number
+          format: double
+          description: Total price of all items in the order.
+          example: 269.97
+        address:
+          type: string
+          description: Delivery address.
+          nullable: true
+          example: 123 Main St, Springfield, IL 62701
+        isPaid:
+          type: boolean
+          description: Whether the order has been paid.
+          example: false
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        items:
+          type: array
+          description: Line items contained in the order.
+          items:
+            $ref: '#/components/schemas/OrderItemResponseDto'
+          nullable: true
+      additionalProperties: false
+
+    OrderResponseDtoPagedResult:
+      type: object
+      description: Paginated list of orders.
+      allOf:
+        - $ref: '#/components/schemas/PagedResultBase'
+        - type: object
+          properties:
+            items:
+              type: array
+              description: Orders for the current page.
+              items:
+                $ref: '#/components/schemas/OrderResponseDto'
+              nullable: true
+      additionalProperties: false
+
+    OrderUpdateDto:
+      type: object
+      description: Editable fields of an existing order. Only valid for orders in Pending status.
+      properties:
+        orderDate:
+          type: string
+          format: date-time
+          description: Updated order date (UTC). Cannot be in the future.
+          example: '2025-06-16T10:00:00Z'
+        address:
+          type: string
+          description: Updated delivery address. Maximum 500 characters.
+          maxLength: 500
+          nullable: true
+          example: 456 Oak Ave, Chicago, IL 60601
+      additionalProperties: false
+
+    UpdateOrderStatusDto:
+      type: object
+      description: Payload for updating an order's fulfillment status.
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+      additionalProperties: false
+
+    UpdatePaymentDto:
+      type: object
+      description: Payment details for marking an order as paid.
+      required:
+        - amount
+      properties:
+        amount:
+          type: number
+          format: double
+          description: Payment amount. Must match the order's total price exactly.
+          minimum: 0.01
+          example: 269.97
+      additionalProperties: false
+
+    # ── Shared ────────────────────────────────────────────────────────────
+
+    PagedResultBase:
+      type: object
+      description: Base structure for all paginated responses.
+      properties:
+        totalCount:
+          type: integer
+          format: int32
+          description: Total number of records matching the applied filters.
+          example: 87
+        pageNumber:
+          type: integer
+          format: int32
+          description: Current page number.
+          example: 1
+        pageSize:
+          type: integer
+          format: int32
+          description: Number of records per page.
+          example: 20
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+          description: Total number of pages (calculated automatically).
+          example: 5
+        hasPreviousPage:
+          type: boolean
+          readOnly: true
+          description: True if there is a previous page.
+          example: false
+        hasNextPage:
+          type: boolean
+          readOnly: true
+          description: True if there is a next page.
+          example: true
+
+    ErrorResponse:
+      type: object
+      description: Standard error response body.
+      properties:
+        message:
+          type: string
+          description: Human-readable description of the error.
+          example: Resource not found.
+        code:
+          type: string
+          description: Machine-readable error code (optional).
+          nullable: true
+          example: RESOURCE_NOT_FOUND
+      additionalProperties: false
+
+    ValidationErrorResponse:
+      type: object
+      description: Response body returned when input validation fails.
+      properties:
+        message:
+          type: string
+          description: Summary error message.
+          example: One or more validation errors occurred.
+        errors:
+          type: object
+          description: Dictionary mapping field names to their validation error messages.
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            email:
+              - The email address is not valid.
+            password:
+              - The password must be at least 8 characters long.
+              - The password must contain at least one uppercase letter.
+      additionalProperties: false
+
+security:
+  - Bearer: []
