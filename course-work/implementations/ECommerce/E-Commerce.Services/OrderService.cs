@@ -32,7 +32,7 @@ namespace E_Commerce.Services
 
             if (user == null)
             {
-                throw new Exception("User not found");
+                throw new KeyNotFoundException("User not found");
             }
 
             decimal totalPrice = 0;
@@ -42,7 +42,7 @@ namespace E_Commerce.Services
                 var product = await _context.Products.FindAsync(item.ProductId);
                 if (product == null)
                 {
-                    throw new Exception($"Product with id - {item.ProductId} not found!");
+                    throw new KeyNotFoundException($"Product with id - {item.ProductId} not found!");
                 }
 
                 item.Price = product.Price;
@@ -81,7 +81,7 @@ namespace E_Commerce.Services
 
             if (response == null)
             {
-                throw new Exception($"Order with id - {response.Id} is not available");
+                throw new KeyNotFoundException($"Order with id - {id} is not available");
             }
 
             if (!isAdmin && loggedUserId.HasValue && response.UserId != loggedUserId.Value)
@@ -110,7 +110,7 @@ namespace E_Commerce.Services
             var order = await _context.Orders.FindAsync(orderId);
             if (order == null)
             {
-                throw new Exception($"Order with id - {orderId} is not available");
+                throw new KeyNotFoundException($"Order with id - {orderId} is not available");
             }
             if (!isAdmin && loggedUserId.HasValue && order.UserId != loggedUserId.Value)
             {
@@ -119,7 +119,7 @@ namespace E_Commerce.Services
 
             if (amount != order.TotalPrice)
             {
-                throw new Exception("Insufficient amount");
+                throw new ArgumentException("Insufficient amount");
             }
 
             order.IsPaid = true;
@@ -135,7 +135,7 @@ namespace E_Commerce.Services
                 .FirstOrDefaultAsync(o => o.Id == orderId);
             if (order == null)
             {
-                throw new Exception($"Order with id - {orderId} is not available");
+                throw new KeyNotFoundException($"Order with id - {orderId} is not available");
             }
 
             order.Status = status;

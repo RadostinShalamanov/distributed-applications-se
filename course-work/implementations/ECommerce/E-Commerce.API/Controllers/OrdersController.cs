@@ -97,14 +97,8 @@ namespace E_Commerce.API.Controllers
             var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             int? loggedUserId = int.TryParse(userIdClaim, out var userId) ? userId : null;
             bool isAdmin = User.IsInRole("Admin");
+
             var order = await _service.GetOrderById(id, loggedUserId, isAdmin);
-
-            if (order == null)
-            {
-                throw new KeyNotFoundException($"Order id #{id} not found.");
-            }
-
-
 
             var response = new OrderResponseDto
             {
@@ -161,11 +155,7 @@ namespace E_Commerce.API.Controllers
         public async Task<IActionResult> Update(int id, OrderUpdateDto dto)
         {
             var toUpdate = await _service.GetById(id);
-            if (toUpdate == null)
-            {
-                throw new KeyNotFoundException($"Order id #{id} not found.");
-            }
-
+         
             toUpdate.OrderDate = dto.OrderDate;
             toUpdate.TotalPrice = dto.TotalPrice;
 
@@ -213,6 +203,7 @@ namespace E_Commerce.API.Controllers
             var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             int? loggedUserId = int.TryParse(userIdClaim, out var id) ? id : null;
             bool isAdmin = User.IsInRole("Admin");
+
             await _service.PayOrder(orderId, dto.Amount, loggedUserId, isAdmin);
 
             return Ok(new

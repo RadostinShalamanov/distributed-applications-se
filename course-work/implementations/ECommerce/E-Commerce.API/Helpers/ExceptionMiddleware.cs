@@ -34,23 +34,23 @@ namespace E_Commerce.API.Helpers
         {
             context.Response.ContentType = "application/problem+json";
 
-            // Определяме статус кода според вида на грешката
+            // having all the statuses
             var statusCode = exception switch
             {
-                UnauthorizedAccessException => HttpStatusCode.Unauthorized,
-                KeyNotFoundException => HttpStatusCode.NotFound,
-                ArgumentException => HttpStatusCode.BadRequest,
-                _ => HttpStatusCode.InternalServerError
+                UnauthorizedAccessException => HttpStatusCode.Unauthorized, //401
+                KeyNotFoundException => HttpStatusCode.NotFound, //404
+                ArgumentException => HttpStatusCode.BadRequest, //400
+                _ => HttpStatusCode.InternalServerError //500
             };
 
             context.Response.StatusCode = (int)statusCode;
 
-            // Създаваме обекта по стандарт RFC 7807
+            // Create object by standard RFC 7807
             var problem = new ProblemDetails
             {
                 Status = (int)statusCode,
                 Title = statusCode.ToString(),
-                Detail = _env.IsDevelopment() ? exception.Message : "Възникна неочаквана грешка. Моля, свържете се с поддръжката.",
+                Detail = _env.IsDevelopment() ? exception.Message : "An error occured!!.",
                 Instance = context.Request.Path
             };
 
