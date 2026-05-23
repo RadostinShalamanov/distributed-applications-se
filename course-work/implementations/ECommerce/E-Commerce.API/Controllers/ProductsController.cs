@@ -100,7 +100,7 @@ namespace E_Commerce.API.Controllers
 
             if (product == null)
             {
-                return NotFound();
+                throw new KeyNotFoundException($"Product id #{id} not found.");
             }
 
             return Ok(product);
@@ -131,7 +131,7 @@ namespace E_Commerce.API.Controllers
             var toUpdate = await _service.GetById(id);
             if (toUpdate == null)
             {
-                return NotFound();
+                throw new KeyNotFoundException($"Product id #{id} not found.");
             }
 
             toUpdate.Name = dto.Name;

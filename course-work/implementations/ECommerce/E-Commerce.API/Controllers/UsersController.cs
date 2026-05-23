@@ -102,7 +102,7 @@ namespace E_Commerce.API.Controllers
             var user = await _service.GetUserById(id);
             if (user == null)
             {
-                return NotFound();
+                throw new KeyNotFoundException($"User with id #{id} not found.");
             }
 
 
@@ -157,7 +157,7 @@ namespace E_Commerce.API.Controllers
 
             if (user == null)
             {
-                return NotFound();
+                throw new KeyNotFoundException($"User id #{id} not found.");
             }
 
             user.Username = dto.Username;

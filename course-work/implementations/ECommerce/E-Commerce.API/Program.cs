@@ -1,4 +1,5 @@
 
+using E_Commerce.API.Helpers;
 using E_Commerce.Data;
 using E_Commerce.Data.Data;
 using E_Commerce.Repository;
@@ -94,6 +95,7 @@ namespace E_Commerce.API
                     };
             });
 
+
             builder.Services.AddAuthorization();
 
             //services
@@ -108,6 +110,7 @@ namespace E_Commerce.API
 
             var app = builder.Build();
 
+            app.UseMiddleware<ExceptionMiddleware>();
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {

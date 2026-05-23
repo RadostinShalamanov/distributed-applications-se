@@ -101,7 +101,7 @@ namespace E_Commerce.API.Controllers
 
             if (order == null)
             {
-                return NotFound();
+                throw new KeyNotFoundException($"Order id #{id} not found.");
             }
 
 
@@ -134,7 +134,7 @@ namespace E_Commerce.API.Controllers
             int loggedUserId = int.Parse(userIdClaim);
             bool isAdmin = User.IsInRole("Admin");
 
-            
+
 
             var order = new Order
             {
@@ -163,7 +163,7 @@ namespace E_Commerce.API.Controllers
             var toUpdate = await _service.GetById(id);
             if (toUpdate == null)
             {
-                return NotFound();
+                throw new KeyNotFoundException($"Order id #{id} not found.");
             }
 
             toUpdate.OrderDate = dto.OrderDate;

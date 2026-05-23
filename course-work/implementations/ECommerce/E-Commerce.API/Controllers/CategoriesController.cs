@@ -74,7 +74,7 @@ namespace E_Commerce.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles="Admin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromBody] CategoryRequestDto dto)
         {
             var category = new Category
@@ -96,7 +96,7 @@ namespace E_Commerce.API.Controllers
             var toUpdate = await _service.GetById(id);
             if (toUpdate == null)
             {
-                return NotFound();
+                throw new KeyNotFoundException($"Category id #{id} is not found .");
             }
 
             toUpdate.Name = dto.Name;
