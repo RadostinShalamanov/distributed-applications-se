@@ -1,0 +1,15 @@
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="container">
+    <h1>Admin Dashboard</h1>
+    <p>Administrative actions: manage products, orders, users and categories.</p>
+
+    <ul>
+        <li><a asp-controller="Products" asp-action="Index">Manage Products</a></li>
+        <li><a asp-controller="Orders" asp-action="Index">Manage Orders</a></li>
+        <li><a asp-controller="Users" asp-action="Index">Manage Users</a></li>
+        <li><a asp-controller="Categories" asp-action="Index">Manage Categories</a></li>
+    </ul>
+</div>

@@ -1,0 +1,127 @@
+@{
+    ViewData["Title"] = "Login";
+}
+
+@* We'll add a tiny bit of custom CSS for that extra polish *@
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .login-card {
+        border: none;
+        border-radius: 15px;
+        transition: transform 0.3s ease;
+    }
+
+        .login-card:hover {
+            transform: translateY(-5px);
+        }
+
+    .form-control:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        border-color: #0d6efd;
+    }
+
+    .btn-gradient {
+        background: linear-gradient(45deg, #0d6efd, #0056b3);
+        border: none;
+        transition: opacity 0.3s;
+    }
+
+        .btn-gradient:hover {
+            opacity: 0.9;
+            color: white;
+        }
+
+    .input-group-text {
+        background-color: transparent;
+        border-right: none;
+    }
+
+    .form-control {
+        border-left: none;
+    }
+</style>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+
+            @* Branding/Logo Section *@
+            <div class="text-center mb-4">
+                <div class="bg-primary d-inline-block p-3 rounded-circle shadow-sm mb-2">
+                    <i class="bi bi-person-fill text-white fs-2"></i>
+                </div>
+                <h2 class="fw-bold text-dark">Welcome Back</h2>
+                <p class="text-muted">Please enter your details to sign in</p>
+            </div>
+
+            <div class="card login-card shadow-lg">
+                <div class="card-body p-5">
+
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger d-flex align-items-center" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <div>@ViewBag.Error</div>
+                        </div>
+                    }
+
+                    @if (ViewBag.Success != null)
+                    {
+                        <div class="alert alert-success d-flex align-items-center" role="alert">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            <div>@ViewBag.Success</div>
+                        </div>
+                    }
+
+                    <form method="post" asp-action="Login">
+                        @* Email Input with Icon *@
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text text-muted">
+                                    <i class="bi bi-envelope"></i>
+                                </span>
+                                <input name="email" type="email" class="form-control" placeholder="name@example.com" required />
+                            </div>
+                        </div>
+
+                        @* Password Input with Icon *@
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between">
+                                <label class="form-label fw-semibold">Password</label>
+
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text text-muted">
+                                    <i class="bi bi-lock"></i>
+                                </span>
+                                <input name="password" type="password" class="form-control" placeholder="••••••••" required />
+                            </div>
+                        </div>
+
+                        @* Remember Me checkbox (always looks professional) *@
+                        <div class="mb-4 form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <label class="form-check-label text-muted small" for="rememberMe">Remember this device</label>
+                        </div>
+
+                        <button class="btn btn-gradient btn-lg w-100 text-white fw-bold shadow-sm" type="submit">
+                            Sign in <i class="bi bi-arrow-right ms-2"></i>
+                        </button>
+                    </form>
+                </div>
+
+                @* Card Footer *@
+                <div class="card-footer bg-light text-center py-3 border-0 rounded-bottom">
+                    <p class="mb-0 text-muted small">
+                        Don't have an account?
+                        <a asp-action="Register" class="fw-bold text-decoration-none">Create one here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,7 @@
+@using E_Commerce.FrontEnd.Models.Orders
+@model OrderUpdateModel
+
+<form asp-action="Edit" method="post">
+    <input asp-for="Status" />
+    <button type="submit">Save</button>
+</form>

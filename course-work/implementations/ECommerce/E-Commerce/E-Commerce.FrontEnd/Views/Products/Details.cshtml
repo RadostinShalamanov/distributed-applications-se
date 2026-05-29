@@ -1,0 +1,46 @@
+﻿@using E_Commerce.FrontEnd.Models.Products
+@using E_Commerce.FrontEnd.Helpers
+@inject IHttpContextAccessor httpContextAccessor
+@model ProductResponseModel
+
+@{
+    ViewData["Title"] = "Product Details";
+    // Check if the current user is an Admin
+    var isAdmin = httpContextAccessor.HttpContext?.IsAdmin() == true;
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>@Model.Name</h2>
+        <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3 text-muted">Description</dt>
+                <dd class="col-sm-9">@Model.Description</dd>
+
+                <dt class="col-sm-3 text-muted">Price</dt>
+                <dd class="col-sm-9 fw-bold text-success">$@Model.Price</dd>
+
+                <dt class="col-sm-3 text-muted">Category</dt>
+                <dd class="col-sm-9">
+                    <span class="badge bg-info text-dark">@Model.CategoryName</span>
+                </dd>
+            </dl>
+        </div>
+
+        @* 1. Only show the footer actions if the user is an Admin *@
+        @if (isAdmin)
+        {
+            <div class="card-footer bg-white py-3">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edit Product</a>
+
+                <form method="post" asp-action="Delete" asp-route-id="@Model.Id" style="display:inline" class="ms-2">
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this product?')">Delete</button>
+                </form>
+            </div>
+        }
+    </div>
+</div>

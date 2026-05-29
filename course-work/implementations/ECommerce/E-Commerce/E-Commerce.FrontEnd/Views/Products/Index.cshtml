@@ -1,0 +1,117 @@
+﻿@using E_Commerce.FrontEnd.Models.Common
+@using E_Commerce.FrontEnd.Models.Products
+@using E_Commerce.FrontEnd.Helpers
+@inject IHttpContextAccessor httpContextAccessor
+@model PagedResponse<ProductResponseModel>
+
+@{
+    ViewData["Title"] = "Our Collection";
+    var isAdmin = httpContextAccessor.HttpContext?.IsAdmin() == true;
+}
+
+<link rel="stylesheet" href="~/css/custom-theme.css" />
+
+<div class="store-hero text-white mb-4">
+    <div class="container">
+        <h1 class="display-5">Products</h1>
+    </div>
+</div>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4">All Products</h2>
+        <div>
+            @* Only show 'Add Product' to Admins *@
+            @if (isAdmin)
+            {
+                <a class="btn btn-outline-secondary me-2" asp-action="Create">Add Product</a>
+            }
+            <a class="btn btn-outline-secondary" asp-controller="Home" asp-action="Products">Store Section</a>
+        </div>
+    </div>
+
+    <form method="get" class="row g-2 mb-4">
+        <div class="col-md-3">
+            <input type="text" name="search" value="@ViewBag.Search" class="form-control" placeholder="Search by name..." />
+        </div>
+        <div class="col-md-2">
+            <input type="number" name="minPrice" value="@ViewBag.MinPrice" class="form-control" placeholder="Min price" />
+        </div>
+        <div class="col-md-2">
+            <input type="number" name="maxPrice" value="@ViewBag.MaxPrice" class="form-control" placeholder="Max price" />
+        </div>
+        <div class="col-md-2">
+            <select name="categoryId" class="form-select">
+                <option value="">All Categories</option>
+                @if (ViewBag.Categories != null)
+                {
+                    @foreach (var cat in ViewBag.Categories)
+                    {
+                        <option value="@cat.Id" selected="@(ViewBag.CategoryId == cat.Id)">@cat.Name</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="sortBy" class="form-select">
+                <option value="">Sort by...</option>
+                <option value="name">Name</option>
+                <option value="price">Price</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
+        </div>
+    </form>
+
+    <div class="product-grid">
+        @foreach (var product in Model.Items)
+        {
+            <div class="product-card">
+                @*@<img src="@($"https://via.placeholder.com/400x300.png?text={Uri.EscapeDataString(product.Name)}")" alt="@product.Name" />*@
+                <div class="card-body">
+                    <div class="product-title">@product.Name</div>
+                    <div class="text-muted small">@product.CategoryName</div>
+                    <p class="mb-2 text-truncate">@product.Description</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="product-price">@String.Format("{0:C}", product.Price)</div>
+                        <div class="badge-stock">In stock</div>
+                    </div>
+                </div>
+                <div class="product-actions">
+                    <a class="btn btn-sm btn-primary" asp-action="Details" asp-route-id="@product.Id">View</a>
+
+                    @* Only show Edit/Delete actions to Admins *@
+                    @if (isAdmin)
+                    {
+                        <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@product.Id">Edit</a>
+                        <form method="post" asp-action="Delete" asp-route-id="@product.Id" style="display: inline;">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" onclick="return confirm('Are you sure?');">Delete</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (Model != null && Model.TotalPages > 1)
+    {
+        <nav>
+            <ul class="pagination justify-content-center mt-4">
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@i"
+                           asp-route-search="@ViewBag.Search"
+                           asp-route-minPrice="@ViewBag.MinPrice"
+                           asp-route-maxPrice="@ViewBag.MaxPrice"
+                           asp-route-sortBy="@ViewBag.SortBy"
+                           asp-route-categoryId="@ViewBag.CategoryId">@i</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+
+    <p class="text-muted text-center mt-3">Total: @Model?.TotalItems products</p>
+</div>

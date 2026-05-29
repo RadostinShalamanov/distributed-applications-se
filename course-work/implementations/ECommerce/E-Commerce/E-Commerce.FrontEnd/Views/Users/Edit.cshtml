@@ -1,0 +1,9 @@
+@using E_Commerce.FrontEnd.Models.Users
+@model UserUpdateModel
+
+<form asp-action="Edit" method="post">
+    <input asp-for="Username" />
+    <input asp-for="Email" />
+    <input asp-for="Role" />
+    <button type="submit">Save</button>
+</form>

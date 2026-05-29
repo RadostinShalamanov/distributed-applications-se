@@ -1,0 +1,98 @@
+@using E_Commerce.FrontEnd.Models.Users
+@model UserResponseModel
+
+<div class="container mt-5">
+    <!-- User Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-3">@Model.Username</h1>
+            <div class="card">
+                <div class="card-body">
+                    <p class="mb-2"><strong>Email:</strong> @Model.Email</p>
+                    <p class="mb-0"><strong>Role:</strong> <span class="badge bg-primary">@Model.Role</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 text-end">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning btn-lg">
+                <i class="bi bi-pencil"></i> Edit
+            </a>
+        </div>
+    </div>
+
+    <!-- Orders Section -->
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Orders</h2>
+
+            @if (Model.Orders != null && Model.Orders.Any())
+            {
+                @foreach (var order in Model.Orders)
+                {
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <strong>Order #@order.Id</strong>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    <span class="badge bg-info">@order.OrderDate.ToString("MMM dd, yyyy")</span>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <span class="badge @(order.Status == "Completed" ? "bg-success" : order.Status == "Pending" ? "bg-warning" : "bg-danger")">
+                                        @order.Status
+                                    </span>
+                                    <span class="badge @(order.IsPaid ? "bg-success" : "bg-danger") ms-2">
+                                        @(order.IsPaid ? "Paid" : "Unpaid")
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Order Items</h5>
+                            @if (order.Items != null && order.Items.Any())
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Product ID</th>
+                                                <th>Product Name</th>
+                                                <th class="text-end">Price</th>
+                                                <th class="text-end">Quantity</th>
+                                                <th class="text-end">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var item in order.Items)
+                                            {
+                                                <tr>
+                                                    <td>@item.ProductId</td>
+                                                    <td>@item.ProductName</td>
+                                                    <td class="text-end">$@item.Price</td>
+                                                    <td class="text-end">@item.Quantity</td>
+                                                    <td class="text-end"><strong>$@(item.Price * item.Quantity)</strong></td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted">No items in this order.</p>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <strong>No orders found.</strong> This user hasn't placed any orders yet.
+                </div>
+            }
+        </div>
+    </div>
+</div>

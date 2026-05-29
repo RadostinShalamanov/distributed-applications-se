@@ -1,0 +1,82 @@
+:root {
+    --primary-gradient-start: #7c3aed;
+    --primary-gradient-end: #2563eb;
+    --accent-bg: #ff8c00;
+    --accent-hover: #e67e22;
+    --accent-text: #fff;
+}
+
+.header-gradient {
+    background: linear-gradient(135deg, var(--primary-gradient-start), var(--primary-gradient-end));
+    border-radius: 0;
+}
+
+.header-gradient h1 {
+    letter-spacing: 0.5px;
+}
+
+.card-accent {
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.card-accent:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+.card-accent .card-title {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.card-accent .card-text {
+    font-size: 0.95rem;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
+.btn-accent {
+    background: linear-gradient(90deg, var(--accent-bg), #ff1493);
+    border: none;
+    color: var(--accent-text);
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-accent:hover,
+.btn-accent:focus {
+    background: linear-gradient(90deg, #ff1493, var(--accent-bg));
+    color: var(--accent-text);
+    transform: scale(1.02);
+}
+
+.btn-outline-primary {
+    border: 2px solid #2563eb;
+    color: #2563eb;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-primary:hover {
+    background-color: #2563eb;
+    color: white;
+    border-color: #2563eb;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .header-gradient {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+    }
+
+    .header-gradient h1 {
+        font-size: 2rem;
+    }
+}

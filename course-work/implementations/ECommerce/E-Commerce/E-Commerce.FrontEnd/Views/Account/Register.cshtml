@@ -1,0 +1,135 @@
+@{
+    ViewData["Title"] = "Create Account";
+}
+
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .register-card {
+        border: none;
+        border-radius: 15px;
+        transition: all 0.3s ease;
+    }
+        /* Subtle glow effect on the registration card */
+        .register-card:hover {
+            box-shadow: 0 1rem 3rem rgba(0,0,0,.1) !important;
+        }
+
+    .form-control:focus {
+        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.15);
+        border-color: #198754;
+    }
+
+    .btn-register {
+        background: linear-gradient(45deg, #198754, #146c43);
+        border: none;
+        transition: transform 0.2s;
+    }
+
+        .btn-register:hover {
+            transform: scale(1.02);
+            color: white;
+        }
+
+    .input-group-text {
+        background-color: transparent;
+        border-right: none;
+    }
+
+    .form-control {
+        border-left: none;
+    }
+</style>
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+
+            @* Header Section *@
+            <div class="text-center mb-4">
+                <div class="bg-success d-inline-block p-3 rounded-circle shadow-sm mb-2">
+                    <i class="bi bi-person-plus-fill text-white fs-2"></i>
+                </div>
+                <h2 class="fw-bold text-dark">Join Us</h2>
+                <p class="text-muted">Create your account to start shopping</p>
+            </div>
+
+            <div class="card register-card shadow-lg">
+                <div class="card-body p-5">
+
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger d-flex align-items-center" role="alert">
+                            <i class="bi bi-exclamation-circle-fill me-2"></i>
+                            <div>@ViewBag.Error</div>
+                        </div>
+                    }
+
+                    <form method="post" asp-action="Register">
+                        @* Full Name *@
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Full Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text text-muted">
+                                    <i class="bi bi-person"></i>
+                                </span>
+                                <input name="username" class="form-control" placeholder="John Doe" required />
+                            </div>
+                        </div>
+
+                        @* Email *@
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text text-muted">
+                                    <i class="bi bi-envelope"></i>
+                                </span>
+                                <input name="email" type="email" class="form-control" placeholder="john@example.com" required />
+                            </div>
+                        </div>
+
+                        @* Password *@
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text text-muted">
+                                    <i class="bi bi-shield-lock"></i>
+                                </span>
+                                <input name="password" type="password" class="form-control" placeholder="Create a password" required />
+                            </div>
+                        </div>
+
+                        @* Confirm Password *@
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Confirm Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text text-muted">
+                                    <i class="bi bi-shield-check"></i>
+                                </span>
+                                <input name="confirmPassword" type="password" class="form-control" placeholder="Repeat your password" required />
+                            </div>
+                        </div>
+
+                        <button class="btn btn-register btn-lg w-100 text-white fw-bold shadow-sm" type="submit">
+                            Register <i class="bi bi-rocket-takeoff ms-2"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card-footer bg-light text-center py-3 border-0 rounded-bottom">
+                    <p class="mb-0 text-muted small">
+                        Already have an account?
+                        <a asp-action="Login" class="fw-bold text-success text-decoration-none">Sign in here</a>
+                    </p>
+                </div>
+            </div>
+
+            @* Simple Footer Links *@
+            <p class="text-center text-muted mt-4 small">
+                By signing up, you agree to our <strong>Terms of Service</strong>
+            </p>
+        </div>
+    </div>
+</div>

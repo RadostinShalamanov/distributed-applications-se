@@ -1,0 +1,41 @@
+@using E_Commerce.FrontEnd.Helpers
+@model E_Commerce.FrontEnd.Models.Orders.OrderRequestModel
+
+@{
+    ViewData["Title"] = "Create Order";
+    var isAdmin = Context.IsAdmin();
+}
+
+<h2>Place New Order</h2>
+
+<form asp-action="Create" method="post">
+    @if (Context.IsAdmin())
+    {
+        <div class="mb-3">
+            <label class="form-label">User ID (Admin Only)</label>
+            <input asp-for="UserId" class="form-control" type="number" placeholder="Enter User ID" />
+        </div>
+    }
+    else
+    {
+       
+        <input type="hidden" asp-for="UserId" value="@Context.Session.GetInt32("CurrentUserId")" />
+    }
+    <div class="mb-3">
+        <label class="form-label">Delivery Address</label>
+        <input asp-for="Address" class="form-control" placeholder="123 Street Name, City" required />
+    </div>
+    <h4>Items</h4>
+    <div id="items-container">
+        <div class="row g-2 mb-2 item-row">
+            <div class="col-md-6">
+                <input name="Items[0].ProductId" class="form-control" placeholder="Product ID" type="number" required />
+            </div>
+            <div class="col-md-6">
+                <input name="Items[0].Quantity" class="form-control" placeholder="Quantity" type="number" required />
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit Order</button>
+</form>
